@@ -1,9 +1,16 @@
+#######################################################################################
+# Imports
+#######################################################################################
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import pickle
 import pandas as pd
 
+#######################################################################################
+# Chargement des données - API Google Places
+#######################################################################################
 
 POI_FILENAME = "data/poi-paris.pkl"
 parismap = mpimg.imread('data/paris-48.806-2.23--48.916-2.48.jpg')
@@ -12,37 +19,61 @@ xmin, xmax = 2.23, 2.48  # coord_x min et max
 ymin, ymax = 48.806, 48.916  # coord_y min et max
 coords = [xmin, xmax, ymin, ymax]
 
+#######################################################################################
+# Classe Density
+#######################################################################################
 
 class Density(object):
     def fit(self,data):
         pass
+    
     def predict(self,data):
         pass
-    def score(self,data):
-        #A compléter : retourne la log-vraisemblance
-        pass
+
+    def score(self, data, biais=10E-10):
+        #A compléter : retourne la log-vraisemblance avec un biais de différence léger
+        return np.log(self.predict(data) + biais).sum()
+
+#######################################################################################
+# Classe Histogramme
+#######################################################################################
 
 class Histogramme(Density):
     def __init__(self,steps=10):
         Density.__init__(self)
         self.steps = steps
+
     def fit(self,x):
         #A compléter : apprend l'histogramme de la densité sur x
+        self.data = x
+
+        # Discrétisation des coordonnées de la carte
         pass
+
     def predict(self,x):
         #A compléter : retourne la densité associée à chaque point de x
         pass
+
+#######################################################################################
+# Classe KernelDensity
+#######################################################################################
 
 class KernelDensity(Density):
     def __init__(self,kernel=None,sigma=0.1):
         Density.__init__(self)
         self.kernel = kernel
         self.sigma = sigma
+
     def fit(self,x):
         self.x = x
+
     def predict(self,data):
         #A compléter : retourne la densité associée à chaque point de data
         pass
+
+#######################################################################################
+# Méthodes complémentaires fournies
+#######################################################################################
 
 def get_density2D(f,data,steps=100):
     """ Calcule la densité en chaque case d'une grille steps x steps dont les bornes sont calculées à partir du min/max de data. Renvoie la grille estimée et la discrétisation sur chaque axe.
@@ -69,7 +100,6 @@ def show_density(f, data, steps=100, log=False):
     plt.colorbar()
     plt.contour(xx, yy, res, 20)
 
-
 def show_img(img=parismap):
     """ Affiche une matrice ou une image selon les coordonnées de la carte de Paris.
     """
@@ -90,6 +120,9 @@ def load_poi(typepoi,fn=POI_FILENAME):
     note = np.array([v[1][1] for v in sorted(poidata[typepoi].items())])
     return data,note
     
+#######################################################################################
+# Affichage des données
+#######################################################################################
 
 plt.ion()
 # Liste des POIs : furniture_store, laundry, bakery, cafe, home_goods_store, clothing_store, atm, lodging, night_club, convenience_store, restaurant, bar

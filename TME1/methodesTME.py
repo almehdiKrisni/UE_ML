@@ -39,7 +39,7 @@ def entropie_cond(list_vect) :
 
 # Data : tableau (films, features), id2titles : dictionnaire id -> titre,
 # fields : id feature -> nom
-[data, id2titles, fields]= pickle.load(open("imdb_extrait.pkl", "rb"))
+[data, id2titles, fields]= pickle.load(open("dataset/imdb_extrait.pkl", "rb"))
 # La derniere colonne est le vote
 datax = data [:,:32]
 datay = np.array([1 if x [33] > 6.5 else -1 for x in data ])
@@ -76,18 +76,81 @@ def treeMaker(maxDepth, X, Y, doSave=True, doPlot=False) :
     dt.fit(X, Y)
 
     # Affichage de la précision de l'arbre
-    print("Précision de l'arbre de décision avec une profondeur maximale de", maxDepth, ":", dt.score(X, Y))
+    print("Précision de l'arbre de décision avec une profondeur maximale de", maxDepth, ":", dt.score(X, Y), "\n")
 
     # Sauvegarde de l'arbre en fichier pdf
-    tdot = export_graphviz(dt, feature_names = id2genre)
-    fileN = "DTreeImages/tree_max_depth_" + str(maxDepth) + ".pdf"
-    pydotplus.graph_from_dot_data(tdot).write_pdf(fileN)
+    if (doSave) :
+        tdot = export_graphviz(dt, feature_names = id2genre)
+        fileN = "DTreeImages/tree_max_depth_" + str(maxDepth) + ".pdf"
+        pydotplus.graph_from_dot_data(tdot).write_pdf(fileN)
 
     # Affichage de l'arbre
     if (doPlot) :
         plt.figure(figsize=(maxDepth * 5, maxDepth * 5))
         plot_tree(dt, feature_names = list(fields.values())[:32], filled=True)
         plt.show()
+
+#############################################################################################
+# Sur et sous apprentissage
+#############################################################################################
+
+# Méthode réalisant la partition de données en ensemble d'apprentissage et de test
+def dataPartition(X, Y, pApp, pTest) :
+    # On vérifie que la somme des proportions est égale à 1
+    if (pApp + pTest != 1.) :
+        print("La somme des proportions n'est pas égale à 1. Revoir les paramètres utilisés.")
+        return
+
+    # Si tout est bon, on réalise la partition (on utilise numpy pour cela)
+    sep = int(len(data) * pApp)
+    indices = np.random.permutation(X.shape[0])
+    training_idx, test_idx = indices[:sep], indices[sep:]
+    
+    # On crée les paritions d'exemple
+    Xapp, Xtest = [X[ind] for ind in training_idx], [X[ind] for ind in test_idx]
+
+    # On crée les partitions de labels
+    Yapp, Ytest = [Y[ind] for ind in training_idx], [Y[ind] for ind in test_idx]
+
+    # On retourne les partitions
+    return Xapp, Xtest, Yapp, Ytest
+
+# Méthode effectuant l'apprentissage sur un arbre et renvoyant les différentes erreurs
+def quickError(Xapp, Xtest, Yapp, Ytest, maxDepth=5) :
+    # On crée un arbre de décision et on l'entraîne sur les données appropriées
+    dt = DTree(max_depth=maxDepth)
+    dt.fit(Xapp, Yapp)
+
+    # On retourne les erreurs d'apprentissage et de test
+    return 1 - dt.score(Xapp, Yapp), 1 - dt.score(Xtest, Ytest)
+
+# Méthode permettant de réaliser des tests rapide en fonction de la profondeur et du nombre d'itérations
+def quickTest(Xapp, Xtest, Yapp, Ytest, maxDepth=5, n=10) :
+    # Il s'agit du même code que dans le notebook
+    appErrList = []
+    testErrList = []
+    prop = [(0.1) * i for i in range(1,10)]
+
+    # On itère sur différentes proportions d'ensemble d'apprentissage
+    for pApp in prop :
+        pTest = 1 - pApp
+
+        # Variables pour sauvegarder les erreurs avant d'effectuer la moyenne
+        appErr = 0
+        testErr = 0
+
+        # On calcule n fois l'erreur afin d'obtenir une moyenne
+        for i in range(n) :
+            Xapp, Xtest, Yapp, Ytest = dataPartition(datax, datay, pApp, pTest)
+            res1, res2 = quickError(Xapp, Xtest, Yapp, Ytest, maxDepth=maxDepth)
+            appErr += res1
+            testErr += res2
+
+        # On ajoute la moyenne à la liste
+        appErrList.append(appErr / n)
+        testErrList.append(testErr / n)
+
+    return appErrList, testErrList
 
 #############################################################################################
 # Partie EXEC - Tests

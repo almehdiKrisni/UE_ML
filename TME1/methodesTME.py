@@ -118,7 +118,7 @@ def dataPartition(X, Y, pApp, pTest) :
 # Méthode effectuant l'apprentissage sur un arbre et renvoyant les différentes erreurs
 def quickError(Xapp, Xtest, Yapp, Ytest, maxDepth=5) :
     # On crée un arbre de décision et on l'entraîne sur les données appropriées
-    dt = DTree(max_depth=maxDepth)
+    dt = DTree(max_depth=maxDepth, min_samples_split=2)
     dt.fit(Xapp, Yapp)
 
     # On retourne les erreurs d'apprentissage et de test
@@ -151,6 +151,64 @@ def quickTest(Xapp, Xtest, Yapp, Ytest, maxDepth=5, n=10) :
         testErrList.append(testErr / n)
 
     return appErrList, testErrList
+
+#############################################################################################
+# Validation croisée - Sélection de modèle
+#############################################################################################
+
+# Méthode permettant la crossvalidation
+def crossVal(X, Y, n, minDepth, maxDepth, doPlot=False) :
+    # On partitionne les données
+    partX = np.array_split(X, n)
+    partY = np.array_split(Y, n)
+
+    # On crée une liste allant sauvegarder les erreurs enregistrées
+    errAppList = []
+    errTestList = []
+    depthList = []
+
+    # On parcourt les différentes profondeurs à tester (entre minDepth et maxDepth)
+    for d in range(minDepth, maxDepth + 1) :
+        depthList.append(d)
+        
+        # On récupère les ensembles à utiliser et on crée les variables d'erreur
+        errApp = 0.
+        errTest = 0.
+
+        # On parcourt les différentes partitions
+        # La partition i est celle d'apprentissage
+        for i in range(n) :
+            Xapp = np.concatenate([partX[j] for j in range(n) if j != i])
+            Yapp = np.concatenate([partY[j] for j in range(n) if j != i])
+            Xtest = partX[i]
+            Ytest = partY[i]
+
+            # On réalise l'apprentissage de l'arbre
+            dt = DTree(max_depth=d, min_samples_split=2)
+            dt.fit(Xapp, Yapp)
+
+            # On additionne les nouvelles erreurs
+            errApp += (1 - dt.score(Xapp, Yapp))
+            errTest += (1 - dt.score(Xtest, Ytest))
+
+        # On met à jour les listes contenant les erreurs
+        errAppList.append(errApp / n)
+        errTestList.append(errTest / n)
+
+    # On affiche les meilleurs paramètres
+    print("Erreur minimale de classification pour l'apprentisssage :", min(errAppList))
+    print("Meilleure profondeur en apprentissage :", depthList[errAppList.index(min(errAppList))])
+    print("\nErreur minimale de classification pour le test :", min(errTestList))
+    print("Meilleure profondeur en test :", depthList[errTestList.index(min(errTestList))])
+
+    # On réalise un affichage des valeurs si demandé en paramètre (doPlot=True)
+    if (doPlot) :
+        plt.title("Erreur de classification pour l'apprentissage et le test en fonction de la profondeur")
+        plt.xlabel("Profondeur d'évaluation")
+        plt.ylabel("Erreur moyenne en cross validation")
+        plt.plot(depthList, errAppList, color='r')
+        plt.plot(depthList, errTestList, color='g')
+        plt.show()
 
 #############################################################################################
 # Partie EXEC - Tests

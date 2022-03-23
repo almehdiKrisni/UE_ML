@@ -2,6 +2,7 @@
 # Imports
 #######################################################################################
 
+from re import X
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -9,10 +10,11 @@ import pickle
 import pandas as pd
 
 #######################################################################################
-# Chargement des données - API Google Places
+# Chargement des données - API Google Places (image et pkl)
 #######################################################################################
 
 POI_FILENAME = "data/poi-paris.pkl"
+poidata = pickle.load(open(POI_FILENAME, "rb"))
 parismap = mpimg.imread('data/paris-48.806-2.23--48.916-2.48.jpg')
 ## coordonnees GPS de la carte
 xmin, xmax = 2.23, 2.48  # coord_x min et max
@@ -31,7 +33,7 @@ class Density(object):
         pass
 
     def score(self, data, biais=10E-10):
-        #A compléter : retourne la log-vraisemblance avec un biais de différence léger
+        # On retourne le score du classifieur
         return np.log(self.predict(data) + biais).sum()
 
 #######################################################################################
@@ -43,16 +45,29 @@ class Histogramme(Density):
         Density.__init__(self)
         self.steps = steps
 
-    def fit(self,x):
-        #A compléter : apprend l'histogramme de la densité sur x
-        self.data = x
+        # On sauvegarde le pas de discrétisation sur chaque axes (2D)
+        self.stepx = ((xmax - xmin) / self.steps)
+        self.stepy = ((ymax - ymin) / self.steps)
 
-        # Discrétisation des coordonnées de la carte
-        pass
+    def fit(self,data):
+        # Utilisation de np.histogramdd et sauvegarde du résultat et de la taille
+        hist, _ = np.histogramdd(data, bins=(self.steps, self.steps))
+        self.hist = hist
+        self.size = len(data)
 
-    def predict(self,x):
-        #A compléter : retourne la densité associée à chaque point de x
-        pass
+    def predict(self,data):
+        # Prédiction sur des données
+        pred = []
+
+        # On parcourt les données que l'on souhaite prédire
+        for i in range(len(data)) :
+            # On calcule les coordonnées
+            cordx = int((data[i][0] - xmin) / self.stepx)
+            cordy = int((data[i][1] - ymin) / self.stepy)
+            pred.append(self.hist[cordx][cordy])
+
+        # On retourne la prédiction
+        return np.array(pred) / ((self.stepx * self.stepy) * self.size)
 
 #######################################################################################
 # Classe KernelDensity
@@ -65,6 +80,7 @@ class KernelDensity(Density):
         self.sigma = sigma
 
     def fit(self,x):
+        # On lie les données à l'histogramme
         self.x = x
 
     def predict(self,data):
@@ -91,20 +107,22 @@ def show_density(f, data, steps=100, log=False):
     """
     res, xlin, ylin = get_density2D(f, data, steps)
     xx, yy = np.meshgrid(xlin, ylin)
-    plt.figure()
+    plt.figure(figsize=(10,10))
     show_img()
     if log:
         res = np.log(res+1e-10)
     plt.scatter(data[:, 0], data[:, 1], alpha=0.8, s=3)
-    show_img(res)
     plt.colorbar()
     plt.contour(xx, yy, res, 20)
+    show_img(res)
+    
 
 def show_img(img=parismap):
     """ Affiche une matrice ou une image selon les coordonnées de la carte de Paris.
     """
     origin = "lower" if len(img.shape) == 2 else "upper"
     alpha = 0.3 if len(img.shape) == 2 else 1.
+    
     plt.imshow(img, extent=coords, aspect=1.5, origin=origin, alpha=alpha)
     ## extent pour controler l'echelle du plan
 
@@ -119,7 +137,21 @@ def load_poi(typepoi,fn=POI_FILENAME):
     data = np.array([[v[1][0][1],v[1][0][0]] for v in sorted(poidata[typepoi].items())])
     note = np.array([v[1][1] for v in sorted(poidata[typepoi].items())])
     return data,note
-    
+
+#######################################################################################
+# Méthodes créées
+#######################################################################################
+
+# Méthode réalisant un affichage de la carte en affichant le type de POI souhaité
+def show_poi(typepoi, img=parismap, fn=POI_FILENAME) :
+    # Récupération des POI
+    geo_mat, notes = load_poi(typepoi, fn=fn)
+
+    # Affichage de l'image et des POI
+    print("Carte de Paris avec affichage des " + typepoi)
+    show_img(img=img)
+    plt.scatter(geo_mat[:,0],geo_mat[:,1],alpha=0.8,s=3)
+
 #######################################################################################
 # Affichage des données
 #######################################################################################
@@ -130,9 +162,7 @@ plt.ion()
 geo_mat, notes = load_poi("bar")
 
 # Affiche la carte de Paris
-show_img()
+# show_img()
+
 # Affiche les POIs
-plt.scatter(geo_mat[:,0],geo_mat[:,1],alpha=0.8,s=3)
-
-
-
+# plt.scatter(geo_mat[:,0],geo_mat[:,1],alpha=0.8,s=3)

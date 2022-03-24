@@ -2,8 +2,6 @@
 # Imports
 #################################################################################################
 
-from cmath import log
-from this import d
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -108,7 +106,7 @@ def grad_check(f, f_grad, N=100, eps=1E-2) :
 #################################################################################################
 
 # Descente de gradient batch
-def descente_gradient_batch(datax, datay, f_loss, f_grad, eps, maxIter) :
+def descente_gradient_batch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
     w = np.zeros((1, len(datax[0])))
     logW = [w[0].tolist()]
@@ -123,11 +121,21 @@ def descente_gradient_batch(datax, datay, f_loss, f_grad, eps, maxIter) :
         logW.append(w[0].tolist())
         logF.append(np.mean(f_loss(w, datax, datay)))
 
+    # Affichage si demandé
+    if (plot) :
+        # Affichage de l'évolution de la perte
+        plt.figure()
+        plt.title("Evolution de la loss en fonction du nombre d'itérations en mode batch\n(eps = " + str(eps) + " , maxIter = " + str(maxIter) + ")")
+        plt.ylabel("Loss")
+        plt.xlabel("Itération")
+        plt.plot([(i + 1) for i in range(maxIter + 1)], logF,'r')
+        plt.show()
+
     # On retourne w et les listes
     return w, logW, logF
 
 # Descente de gradient stochastique
-def descente_gradient_stoch(datax, datay, f_loss, f_grad, eps, maxIter) :
+def descente_gradient_stoch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
     w = np.zeros((1, len(datax[0])))
     logW = [w[0].tolist()]
@@ -142,11 +150,21 @@ def descente_gradient_stoch(datax, datay, f_loss, f_grad, eps, maxIter) :
         logW.append(w[0].tolist())
         logF.append(np.mean(f_loss(w, datax, datay)))
 
+    # Affichage si demandé
+    if (plot) :
+        # Affichage de l'évolution de la perte
+        plt.figure()
+        plt.title("Evolution de la loss en fonction du nombre d'itérations en mode stochastique\n(eps = " + str(eps) + " , maxIter = " + str(maxIter) + ")")
+        plt.ylabel("Loss")
+        plt.xlabel("Itération")
+        plt.plot([(i + 1) for i in range(maxIter + 1)], logF,'r')
+        plt.show()
+
     # On retourne w et les listes
     return w, logW, logF
 
 # Descente de gradient mini-batch
-def descente_gradient_mini(datax, datay, f_loss, f_grad, eps, maxIter, part) :
+def descente_gradient_mini(datax, datay, f_loss, f_grad, eps, part,  maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
     w = np.zeros((1, len(datax[0])))
     logW = [w[0].tolist()]
@@ -154,13 +172,23 @@ def descente_gradient_mini(datax, datay, f_loss, f_grad, eps, maxIter, part) :
 
     # On itère sur le nombre maximal d'itérations
     for iter in range(maxIter) :
-        ind = [np.randint(0, len(datax) - 1) for i in range(part)] # Indices des exemples à utiliser
+        ind = [np.random.randint(0, len(datax) - 1) for i in range(part)] # Indices des exemples à utiliser
         d = np.mean([f_grad(w, datax[i], datay[i]) for i in ind])
         w -= (eps * d)
 
         # On sauvegarde les valeurs
         logW.append(w[0].tolist())
         logF.append(np.mean(f_loss(w, datax, datay)))
+
+    # Affichage si demandé
+    if (plot) :
+        # Affichage de l'évolution de la perte
+        plt.figure()
+        plt.title("Evolution de la loss en fonction du nombre d'itérations en mode mini-batch\n(eps = " + str(eps) + " , maxIter = " + str(maxIter) + ", part = " + str(part) + ")")
+        plt.ylabel("Loss")
+        plt.xlabel("Itération")
+        plt.plot([(i + 1) for i in range(maxIter + 1)], logF,'r')
+        plt.show()
 
     # On retourne w et les listes
     return w, logW, logF

@@ -108,7 +108,7 @@ def grad_check(f, f_grad, N=100, eps=1E-2) :
 # Descente de gradient batch
 def descente_gradient_batch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
-    w = np.zeros((1, len(datax[0])))
+    w = np.random.rand(1, len(datax[0]))
     logW = [w[0].tolist()]
     logF = [np.mean(f_loss(w, datax, datay))]
 
@@ -134,15 +134,16 @@ def descente_gradient_batch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot
     # On retourne w et les listes
     return w, logW, logF
 
+# MODIFICATION DANS LE CADRE DU TME 4 - MAXITER = EPOCHS
 # Descente de gradient stochastique
 def descente_gradient_stoch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
-    w = np.zeros((1, len(datax[0])))
+    w = np.random.rand(1, len(datax[0]))
     logW = [w[0].tolist()]
     logF = [np.mean(f_loss(w, datax, datay))]
 
     # On itère sur le nombre maximal d'itérations
-    for iter in range(maxIter) :
+    for iter in range(maxIter * len(datax)) :
         index = np.random.randint(0, len(datax) - 1)
         w -= (eps * f_grad(w, datax[index], datay[index]))
 
@@ -163,15 +164,16 @@ def descente_gradient_stoch(datax, datay, f_loss, f_grad, eps, maxIter=100, plot
     # On retourne w et les listes
     return w, logW, logF
 
+# MODIFICATION DANS LE CADRE DU TME 4 - MAXITER = EPOCHS
 # Descente de gradient mini-batch
 def descente_gradient_mini(datax, datay, f_loss, f_grad, eps, part,  maxIter=100, plot=False) :
     # On crée le w initial et les listes de sauvegardes des w et de la fonction de coût
-    w = np.zeros((1, len(datax[0])))
+    w = np.random.rand(1, len(datax[0]))
     logW = [w[0].tolist()]
     logF = [np.mean(f_loss(w, datax, datay))]
 
     # On itère sur le nombre maximal d'itérations
-    for iter in range(maxIter) :
+    for iter in range(maxIter * ((len(datay) / part))) :
         ind = [np.random.randint(0, len(datax) - 1) for i in range(part)] # Indices des exemples à utiliser
         d = np.mean([f_grad(w, datax[i], datay[i]) for i in ind])
         w -= (eps * d)

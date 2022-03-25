@@ -21,7 +21,7 @@ def perceptron_loss(w,x,y) :
     x = x.reshape(y.shape[0], w.shape[0])
 
     # On retourne la loss du perceptron
-    return np.maximum(0, - (y * np.dot(x,w)))
+    return (np.maximum(0, (-y * np.dot(x,w))))
 
 def perceptron_grad(w,x,y) :
     # On fait attention à ce que les données soit dans la bonne dimension
@@ -35,8 +35,8 @@ def perceptron_grad(w,x,y) :
     indexBadClassif = np.where(classif < 0)
 
     # On crée le gradient à retourner
-    grad = np.zeros(len(x))
-    grad[indexBadClassif] = ((-y) * x)[indexBadClassif]
+    grad = np.zeros(x.shape)
+    grad[indexBadClassif] = (-y * x)[indexBadClassif]
     return grad
 
 #################################################################################################
@@ -49,20 +49,20 @@ class Lineaire(object):
         self.w = None
         self.loss,self.loss_g = loss,loss_g
         
-    def fit(self,datax,datay,mode="batch",part=10):
+    def fit(self,datax,datay,mode="batch",part=10, doPlot=False):
         # On sauvegarder les ensembles d'apprentissage
         self.trainx = datax
         self.trainy = datay
 
         # On retourne la descente de gradient
         if (mode == "batch") :
-            self.w, self.wLog, self.fLog = descente_gradient_batch(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, maxIter=self.max_iter)
+            self.w, self.wLog, self.fLog = descente_gradient_batch(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, maxIter=self.max_iter, plot=doPlot)
         
         elif (mode == "stoch") :
-            self.w, self.wLog, self.fLog = descente_gradient_stoch(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, maxIter=self.max_iter)
+            self.w, self.wLog, self.fLog = descente_gradient_stoch(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, maxIter=self.max_iter, plot=doPlot)
 
         elif (mode == "mini") :
-            self.w, self.wLog, self.fLog = descente_gradient_mini(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, part=part, maxIter=self.max_iter)
+            self.w, self.wLog, self.fLog = descente_gradient_mini(self.trainx, self.trainy, self.loss, self.loss_g, eps=self.eps, part=part, maxIter=self.max_iter, plot=doPlot)
 
         # Aucun mode ne correspond
         else :
@@ -83,7 +83,8 @@ class Lineaire(object):
 
         # On prédit les labels de datax et on retourne la précision
         pred = self.predict(self.testx)
-        return np.mean([1 if (self.testy[i] == pred[i]) else 0 for i in range(len(self.testy))])
+        prec = np.mean([1 if (self.testy[i] == pred[i]) else 0 for i in range(len(self.testy))])
+        return prec
 
 #################################################################################################
 # Gestion données USPS

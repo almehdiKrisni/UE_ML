@@ -173,7 +173,7 @@ def descente_gradient_mini(datax, datay, f_loss, f_grad, eps, part,  maxIter=100
     logF = [np.mean(f_loss(w, datax, datay))]
 
     # On itère sur le nombre maximal d'itérations
-    for iter in range(maxIter * ((len(datay) / part))) :
+    for iter in range(maxIter * int((len(datay) / part))) :
         ind = [np.random.randint(0, len(datax) - 1) for i in range(part)] # Indices des exemples à utiliser
         d = np.mean([f_grad(w, datax[i], datay[i]) for i in ind])
         w -= (eps * d)
